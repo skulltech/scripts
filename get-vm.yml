@@ -1,0 +1,22 @@
+- name: Get VM details
+  hosts: '{{ host }}'
+  vars_prompt:
+    - name: host
+      prompt: VM Host
+      private: no
+      default: localhost
+    - name: name
+      prompt: Name of the VM
+      private: no
+
+  tasks:
+    - name: Get MAC address
+      shell: virsh domiflist {{ name }} | awk '/bridge/{print $5}'
+      register: mac
+
+    - name: Get IP address
+      shell: virsh net-dhcp-leases default | awk '/{{ mac.stdout }}/{print $5}' |  awk -F/ '{print $1}'
+      register: ip
+
+    - debug:
+        var: ip.stdout

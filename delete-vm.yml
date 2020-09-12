@@ -1,0 +1,19 @@
+- name: Delete a VM
+  hosts: '{{ host }}'
+  vars_prompt:
+    - name: host
+      prompt: VM Host
+      private: no
+      default: localhost
+    - name: name
+      prompt: "Name of the VM to be deleted"
+      private: no
+
+  tasks:
+    - name: Destroy domain
+      command: virsh destroy {{ name }}
+      ignore_errors: yes
+
+    - name: Undefine domain
+      command: virsh undefine {{ name }}
+      ignore_errors: yes

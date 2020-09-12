@@ -1,0 +1,52 @@
+- name: Create a VM using a cloud image
+  hosts: '{{ host }}'
+  vars:
+    base_image: /home/sumit/images/base/focal-server-cloudimg-amd64.img
+    images_dir: /home/sumit/images/{{ name }}
+    os: ubuntu20.04
+  vars_prompt:
+    - name: host
+      prompt: VM Host
+      private: no
+      default: localhost
+    - name: name
+      prompt: Name of the VM
+      private: no
+    - name: image_capacity
+      prompt: Disk capacity
+      private: no
+      default: 10G
+    - name: ram
+      prompt: "RAM"
+      private: no
+      default: 2048
+    - name: vcpus
+      prompt: Num. of CPUs
+      private: no
+      default: 1
+
+  tasks:
+    - name: Create images directory
+      file:
+        path: '{{ images_dir }}'
+        state: directory
+
+    - name: Create VM image from base image
+      command: qemu-img create -b {{ base_image }} -f qcow2 -F qcow2 {{ images_dir }}/{{ name }}.img {{ image_capacity }}
+
+    - name: Create user-data
+      template:
+        src: user-data.j2
+        dest: '{{ images_dir }}/user-data'
+
+    - name: Create meta-data
+      template:
+        src: meta-data.j2
+        dest: '{{ images_dir }}/meta-data'
+
+    - name: Create cloud-init configuration image
+      command: genisoimage -output {{ images_dir }}/{{ name }}-cidata.iso -V cidata -r -J {{ images_dir }}/user-data {{ images_dir }}/meta-data
+      become: yes
+
+    - name: Create the VM
+      command: virt-install --name={{ name }} --ram={{ ram }} --vcpus={{ vcpus }} --import --disk path={{ images_dir }}/{{ name }}.img,format=qcow2 --disk path={{ images_dir }}/{{ name }}-cidata.iso,device=cdrom --os-variant {{ os }} --network bridge=virbr0,model=virtio --graphics vnc,listen=0.0.0.0 --noautoconsole
