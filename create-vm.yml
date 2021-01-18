@@ -45,7 +45,15 @@
         dest: '{{ images_dir }}/meta-data'
 
     - name: Create cloud-init configuration image
-      command: genisoimage -output {{ images_dir }}/{{ name }}-cidata.iso -V cidata -r -J {{ images_dir }}/user-data {{ images_dir }}/meta-data
+      community.general.iso_create:
+        dest_iso: "{{ images_dir }}/{{ name }}-cidata.iso"
+        src_files:
+          - "{{ images_dir }}/user-data"
+          - "{{ images_dir }}/meta-data"
+        vol_ident: cidata
+        interchange_level: 4
+        rock_ridge: "1.09"
+        joliet: 3
       become: yes
 
     - name: Create the VM
